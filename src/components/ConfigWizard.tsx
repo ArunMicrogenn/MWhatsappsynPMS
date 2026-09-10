@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { ServiceConfig } from '../types';
-import { Settings, Server, FileCode, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
+import { Settings, Server, FileCode, Play, Shield, Terminal, AlertCircle, Upload, Loader2 } from 'lucide-react';
 import { ServiceArchitectureDiagram } from './ServiceArchitectureDiagram';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface ConfigWizardProps {
   config: ServiceConfig;
@@ -12,6 +14,8 @@ interface ConfigWizardProps {
 }
 
 export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }: ConfigWizardProps) {
+  const [isGeneratingBulk, setIsGeneratingBulk] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const handleChange = (field: keyof ServiceConfig, value: string) => {
     onChange({ ...config, [field]: value });
   };
@@ -113,6 +117,71 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      let instances: Partial<ServiceConfig>[] = [];
+
+      try {
+        if (file.name.endsWith('.json')) {
+          instances = JSON.parse(content);
+        } else if (file.name.endsWith('.csv')) {
+          const lines = content.split('\n').filter(l => l.trim().length > 0);
+          const headers = lines[0].split(',').map(h => h.trim());
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            const obj: any = {};
+            headers.forEach((h, idx) => {
+              obj[h] = values[idx];
+            });
+            instances.push(obj);
+          }
+        } else {
+           alert("Unsupported file format. Please upload a .json or .csv file.");
+           return;
+        }
+
+        if (instances.length === 0) return;
+        
+        setIsGeneratingBulk(true);
+        const zip = new JSZip();
+
+        for (const instance of instances) {
+           const mergedConfig = { ...config, ...instance };
+           const res = await fetch('/api/generate', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(mergedConfig)
+           });
+           const data = await res.json();
+           if (data.success) {
+              const folder = zip.folder(mergedConfig.serviceName || 'Service');
+              Object.entries(data.files).forEach(([filename, content]) => {
+                 folder?.file(filename, content as string);
+              });
+           }
+        }
+        
+        const blob = await zip.generateAsync({ type: 'blob' });
+        saveAs(blob, 'whatsapp-services-bulk.zip');
+        setIsGeneratingBulk(false);
+      } catch (err) {
+        console.error("Failed to parse file", err);
+        alert("Failed to parse file. Ensure it is valid JSON or CSV.");
+        setIsGeneratingBulk(false);
+      } finally {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className={`rounded-2xl border shadow-sm p-6 sm:p-8 transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'}`}>
       <div className={`flex items-center justify-between pb-6 border-b mb-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -125,18 +194,43 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
             Configure parameters to wrap your PHP WhatsApp sync script into a robust Windows Service.
           </p>
         </div>
-        <button
-          onClick={onGenerate}
-          disabled={loading || hasErrors}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {loading ? (
-            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          ) : (
-            <Play className="w-4 h-4 fill-white" />
-          )}
-          Generate Service Package
-        </button>
+        <div className="flex items-center gap-3">
+          <input 
+            type="file" 
+            accept=".json,.csv"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isGeneratingBulk || hasErrors}
+            className={`px-4 py-2.5 text-sm font-medium rounded-xl border transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+              darkMode 
+                ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {isGeneratingBulk ? (
+              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+            ) : (
+              <Upload className="w-4 h-4 text-slate-400" />
+            )}
+            Bulk Generate
+          </button>
+          <button
+            onClick={onGenerate}
+            disabled={loading || hasErrors}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading ? (
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              <Play className="w-4 h-4 fill-white" />
+            )}
+            Generate Package
+          </button>
+        </div>
       </div>
 
       <div className={`mb-8 p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
