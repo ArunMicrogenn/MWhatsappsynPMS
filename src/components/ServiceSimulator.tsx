@@ -3,6 +3,7 @@ import { Activity, Play, Square, RotateCw, Terminal, CheckCircle2, AlertTriangle
 
 interface ServiceSimulatorProps {
   serviceName: string;
+  darkMode?: boolean;
 }
 
 interface HealthMetrics {
@@ -15,7 +16,7 @@ interface HealthMetrics {
   errorRate: string;
 }
 
-export function ServiceSimulator({ serviceName }: ServiceSimulatorProps) {
+export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProps) {
   const [status, setStatus] = useState<'Running' | 'Stopped' | 'Starting' | 'Stopping'>('Running');
   const [metrics, setMetrics] = useState<HealthMetrics>({
     memoryUsageMB: 24,
@@ -92,17 +93,25 @@ export function ServiceSimulator({ serviceName }: ServiceSimulatorProps) {
     }, 1500);
   };
 
+  const cardClass = `rounded-2xl border shadow-sm p-6 sm:p-8 transition-colors duration-200 ${
+    darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'
+  }`;
+
+  const subCardClass = `p-4 rounded-xl border flex items-center justify-between ${
+    darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200/60'
+  }`;
+
   return (
     <div className="space-y-6">
       {/* Control & Status Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-slate-100 mb-6 gap-4">
+      <div className={cardClass}>
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b mb-6 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h2 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               <Activity className="w-5 h-5 text-emerald-600" />
               Windows Service Control & Simulator
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className={`text-sm mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Simulate service control commands and monitor real-time health telemetry.
             </p>
           </div>
@@ -124,7 +133,9 @@ export function ServiceSimulator({ serviceName }: ServiceSimulatorProps) {
             </button>
             <button
               onClick={handleRestart}
-              className="px-3.5 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className={`px-3.5 py-2 text-white text-xs font-medium rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-700 hover:bg-slate-800'
+              }`}
             >
               <RotateCw className="w-3.5 h-3.5" /> Restart
             </button>
@@ -132,34 +143,34 @@ export function ServiceSimulator({ serviceName }: ServiceSimulatorProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex items-center justify-between">
+          <div className={subCardClass}>
             <div>
-              <span className="text-xs font-medium text-slate-500 block">Service Name</span>
-              <span className="text-sm font-bold text-slate-800 font-mono mt-0.5 block">{serviceName}</span>
+              <span className={`text-xs font-medium block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Service Name</span>
+              <span className={`text-sm font-bold font-mono mt-0.5 block ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{serviceName}</span>
             </div>
             <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1 ${
-              status === 'Running' ? 'bg-emerald-100 text-emerald-700' :
-              status === 'Stopped' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+              status === 'Running' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' :
+              status === 'Stopped' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
             }`}>
               {status === 'Running' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
               {status}
             </span>
           </div>
 
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex items-center justify-between">
+          <div className={subCardClass}>
             <div>
-              <span className="text-xs font-medium text-slate-500 block">Process Runtime</span>
-              <span className="text-sm font-bold text-slate-800 font-mono mt-0.5 block">PHP CLI (php.exe)</span>
+              <span className={`text-xs font-medium block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Process Runtime</span>
+              <span className={`text-sm font-bold font-mono mt-0.5 block ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>PHP CLI (php.exe)</span>
             </div>
-            <span className="text-xs text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded font-mono">PID 4820</span>
+            <span className={`text-xs px-2 py-0.5 rounded font-mono ${darkMode ? 'bg-slate-800 text-slate-300' : 'text-slate-500 bg-slate-200/70'}`}>PID 4820</span>
           </div>
 
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex items-center justify-between">
+          <div className={subCardClass}>
             <div>
-              <span className="text-xs font-medium text-slate-500 block">Recovery Policy</span>
-              <span className="text-sm font-bold text-slate-800 mt-0.5 block">Auto Restart (10s delay)</span>
+              <span className={`text-xs font-medium block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Recovery Policy</span>
+              <span className={`text-sm font-bold mt-0.5 block ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>Auto Restart (10s delay)</span>
             </div>
-            <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded">Active</span>
           </div>
         </div>
 
@@ -223,14 +234,14 @@ export function ServiceSimulator({ serviceName }: ServiceSimulatorProps) {
       </div>
 
       {/* Terminal Log Stream */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+      <div className={cardClass}>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
             <Terminal className="w-4 h-4 text-slate-500" /> Live Daemon Log Stream
           </span>
           <button
             onClick={() => setLogs([])}
-            className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"
+            className={`text-xs underline cursor-pointer ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Clear logs
           </button>

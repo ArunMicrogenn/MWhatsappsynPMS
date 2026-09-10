@@ -5,19 +5,20 @@ import { FileText, Copy, Check, Download, Terminal, Code } from 'lucide-react';
 interface CodeViewerProps {
   files: GeneratedFiles | null;
   serviceName: string;
+  darkMode?: boolean;
 }
 
-export function CodeViewer({ files, serviceName }: CodeViewerProps) {
+export function CodeViewer({ files, serviceName, darkMode }: CodeViewerProps) {
   const [activeTab, setActiveTab] = useState<keyof GeneratedFiles>('winsw.xml');
   const [copied, setCopied] = useState(false);
 
   if (!files) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-12 text-center">
-        <Terminal className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <h3 className="text-base font-semibold text-slate-700">No Service Files Generated Yet</h3>
-        <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-          Configure your service settings above and click <span className="font-semibold text-slate-700">"Generate Service Package"</span> to create WinSW XML, NSSM batch installer, and PHP daemon scripts.
+      <div className={`rounded-2xl border shadow-sm p-12 text-center transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200/80 text-slate-700'}`}>
+        <Terminal className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+        <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-700'}`}>No Service Files Generated Yet</h3>
+        <p className={`text-sm mt-1 max-w-md mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          Configure your service settings above and click <span className={`font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>"Generate Service Package"</span> to create WinSW XML, NSSM batch installer, and PHP daemon scripts.
         </p>
       </div>
     );
@@ -38,7 +39,6 @@ export function CodeViewer({ files, serviceName }: CodeViewerProps) {
   };
 
   const handleDownloadAll = () => {
-    // Download each file
     Object.entries(files).forEach(([filename, content]) => {
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -53,8 +53,8 @@ export function CodeViewer({ files, serviceName }: CodeViewerProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-200 gap-4">
+    <div className={`rounded-2xl border shadow-sm overflow-hidden transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
+      <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b gap-4 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
           {(Object.keys(files) as Array<keyof GeneratedFiles>).map((key) => (
             <button
@@ -62,8 +62,8 @@ export function CodeViewer({ files, serviceName }: CodeViewerProps) {
               onClick={() => setActiveTab(key)}
               className={`px-3.5 py-2 text-xs font-medium rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 activeTab === key
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  ? darkMode ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-900 text-white shadow-sm'
+                  : darkMode ? 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <span>{fileLabels[key].icon}</span>
@@ -75,9 +75,13 @@ export function CodeViewer({ files, serviceName }: CodeViewerProps) {
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={handleCopy}
-            className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-medium rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+            className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+              darkMode 
+                ? 'bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+            }`}
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
             {copied ? 'Copied!' : 'Copy Code'}
           </button>
           <button

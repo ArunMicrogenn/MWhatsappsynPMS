@@ -8,9 +8,10 @@ interface Message {
 
 interface AiCopilotProps {
   serviceName: string;
+  darkMode?: boolean;
 }
 
-export function AiCopilot({ serviceName }: AiCopilotProps) {
+export function AiCopilot({ serviceName, darkMode }: AiCopilotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -59,14 +60,14 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 flex flex-col h-[600px]">
-      <div className="flex items-center justify-between pb-6 border-b border-slate-100 mb-4">
+    <div className={`rounded-2xl border shadow-sm p-6 sm:p-8 flex flex-col h-[600px] transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'}`}>
+      <div className={`flex items-center justify-between pb-6 border-b mb-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             <Bot className="w-5 h-5 text-emerald-600" />
             AI WhatsApp & Windows Service Copilot
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className={`text-sm mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Powered by Gemini AI to assist with PHP daemon architecture and Windows service troubleshooting.
           </p>
         </div>
@@ -78,7 +79,11 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
           <button
             key={idx}
             onClick={() => handleSend(prompt)}
-            className="text-xs bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center gap-1"
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+              darkMode 
+                ? 'bg-slate-950 hover:bg-emerald-950/60 hover:text-emerald-300 text-slate-300 border-slate-800' 
+                : 'bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 border-slate-200'
+            }`}
           >
             <Sparkles className="w-3 h-3 text-emerald-600" />
             {prompt}
@@ -87,7 +92,7 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-4 font-mono text-xs">
+      <div className={`flex-1 overflow-y-auto space-y-4 p-4 rounded-xl border mb-4 font-mono text-xs ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
         {messages.map((msg, idx) => (
           <div
             key={idx}
@@ -101,8 +106,10 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
             <div
               className={`p-3.5 rounded-xl max-w-[85%] leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-slate-900 text-white font-sans text-sm'
-                  : 'bg-white text-slate-800 border border-slate-200 whitespace-pre-wrap font-sans text-sm'
+                  ? 'bg-slate-900 text-white font-sans text-sm border border-slate-700'
+                  : darkMode 
+                    ? 'bg-slate-900 text-slate-200 border border-slate-800 whitespace-pre-wrap font-sans text-sm' 
+                    : 'bg-white text-slate-800 border border-slate-200 whitespace-pre-wrap font-sans text-sm'
               }`}
             >
               {msg.content}
@@ -110,7 +117,7 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
           </div>
         ))}
         {loading && (
-          <div className="flex gap-3 items-center text-slate-500">
+          <div className="flex gap-3 items-center text-slate-400">
             <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 animate-pulse">
               <Bot className="w-4 h-4" />
             </div>
@@ -132,7 +139,11 @@ export function AiCopilot({ serviceName }: AiCopilotProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything about PHP sync daemons, NSSM, WinSW, or WhatsApp APIs..."
-          className="flex-1 px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+          className={`flex-1 px-4 py-2.5 text-sm border rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all ${
+            darkMode 
+              ? 'bg-slate-950 border-slate-800 text-white placeholder-slate-500 focus:bg-slate-950' 
+              : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:bg-white'
+          }`}
         />
         <button
           type="submit"

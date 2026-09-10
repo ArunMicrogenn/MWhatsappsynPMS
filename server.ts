@@ -16,8 +16,10 @@ app.post("/api/generate-wrapper", (req, res) => {
       displayName = "WhatsApp PHP Sync Daemon",
       description = "Background Windows Service for syncing WhatsApp messages and webhooks using PHP ODBC",
       phpPath = "C:\\php\\php.exe",
-      scriptPath = "C:\\inetpub\\wwwroot\\whatsapp-sync\\whatsapp-daemon.php",
-      workingDirectory = "C:\\inetpub\\wwwroot\\whatsapp-sync",
+      scriptPath = "C:\\whatsapp-sync\\whatsapp-daemon.php",
+      workingDirectory = "C:\\whatsapp-sync",
+      pdfSourcePath = "C:\\ftproot\\Whatsapp",
+      pdfDestPath = "C:\\whatsapp-sync\\Files",
       logMode = "roll-by-size",
       startMode = "Automatic",
       onFailure = "restart",
@@ -236,8 +238,8 @@ while (true) {
                         $mediaBlock = '';
                         if ($clbal > 0 && !empty($file)) {
                             $filename = $file;
-                            $filepath = "C:/inetpub/ftproot/Whatsapp/$Whatsapp_hotelcode/$filename.pdf";
-                            $desdir = "C:/inetpub/wwwroot/whatsappsms/Files/$Whatsapp_hotelcode";
+                            $filepath = "${pdfSourcePath.replace(/\\/g, '/')}/$Whatsapp_hotelcode/$filename.pdf";
+                            $desdir = "${pdfDestPath.replace(/\\/g, '/')}/$Whatsapp_hotelcode";
                             $des = "$desdir/$filename.pdf";
                             if (!file_exists($desdir)) {
                                 @mkdir($desdir, 0777, true);

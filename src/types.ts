@@ -5,6 +5,8 @@ export interface ServiceConfig {
   phpPath: string;
   scriptPath: string;
   workingDirectory: string;
+  pdfSourcePath: string;
+  pdfDestPath: string;
   logMode: string;
   startMode: string;
   onFailure: string;
