@@ -1,0 +1,6 @@
+{
+  "name": "WhatsApp PHP Windows Service Generator",
+  "description": "Generate Windows Service wrappers, WinSW XML configurations, NSSM scripts, and PHP daemon scripts for WhatsApp sync units.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

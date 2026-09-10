@@ -1,0 +1,20 @@
+export interface ServiceConfig {
+  serviceName: string;
+  displayName: string;
+  description: string;
+  phpPath: string;
+  scriptPath: string;
+  workingDirectory: string;
+  logMode: string;
+  startMode: string;
+  onFailure: string;
+  delaySeconds: string;
+}
+
+export interface GeneratedFiles {
+  "winsw.xml": string;
+  "install-service.bat": string;
+  "whatsapp-daemon.php": string;
+  "manage-service.ps1": string;
+  "README.md": string;
+}
