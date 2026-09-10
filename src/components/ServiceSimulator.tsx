@@ -19,6 +19,11 @@ interface HealthMetrics {
 
 export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProps) {
   const [status, setStatus] = useState<'Running' | 'Stopped' | 'Starting' | 'Stopping'>('Running');
+  const [activeTab, setActiveTab] = useState<'monitoring' | 'benchmarking'>('monitoring');
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [benchmarkProgress, setBenchmarkProgress] = useState(0);
+  const [benchmarkResult, setBenchmarkResult] = useState<{ cpuEst: string, memEst: string, recommendation: string } | null>(null);
+
   const [metrics, setMetrics] = useState<HealthMetrics>({
     memoryUsageMB: 24,
     cpuLoadPercent: 2.1,
@@ -99,6 +104,28 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
     }, 1500);
   };
 
+  const runBenchmark = () => {
+    setIsBenchmarking(true);
+    setBenchmarkProgress(0);
+    setBenchmarkResult(null);
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      setBenchmarkProgress(progress);
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        setIsBenchmarking(false);
+        setBenchmarkResult({
+          cpuEst: (1.5 + Math.random() * 2).toFixed(1) + "%",
+          memEst: (20 + Math.random() * 15).toFixed(0) + " MB",
+          recommendation: "System overhead is well within acceptable margins. The polling interval (30s) is optimized."
+        });
+      }
+    }, 300);
+  };
+
   const cardClass = `rounded-2xl border shadow-sm p-6 sm:p-8 transition-colors duration-200 ${
     darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'
   }`;
@@ -109,9 +136,34 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
 
   return (
     <div className="space-y-6">
-      {/* Control & Status Card */}
-      <div className={cardClass}>
-        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b mb-6 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+      <div className={`flex items-center p-1 rounded-lg border inline-flex ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+        <button
+          onClick={() => setActiveTab('monitoring')}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+            activeTab === 'monitoring' 
+              ? darkMode ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
+              : darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Live Monitoring
+        </button>
+        <button
+          onClick={() => setActiveTab('benchmarking')}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+            activeTab === 'benchmarking' 
+              ? darkMode ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
+              : darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Benchmarking
+        </button>
+      </div>
+
+      {activeTab === 'monitoring' ? (
+        <>
+          {/* Control & Status Card */}
+          <div className={cardClass}>
+            <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b mb-6 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div>
             <h2 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               <Activity className="w-5 h-5 text-emerald-600" />
@@ -265,25 +317,96 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
         </div>
       </div>
 
-      {/* Terminal Log Stream */}
-      <div className={cardClass}>
-        <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-            <Terminal className="w-4 h-4 text-slate-500" /> Live Daemon Log Stream
-          </span>
-          <button
-            onClick={() => setLogs([])}
-            className={`text-xs underline cursor-pointer ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            Clear logs
-          </button>
+          {/* Terminal Log Stream */}
+          <div className={cardClass}>
+            <div className="flex items-center justify-between mb-3">
+              <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <Terminal className="w-4 h-4 text-slate-500" /> Live Daemon Log Stream
+              </span>
+              <button
+                onClick={() => setLogs([])}
+                className={`text-xs underline cursor-pointer ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Clear logs
+              </button>
+            </div>
+            <div className="bg-slate-950 text-emerald-400 p-4 rounded-xl font-mono text-xs h-64 overflow-y-auto space-y-1.5 border border-slate-800">
+              {logs.map((log, idx) => (
+                <div key={idx} className="break-all">{log}</div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className={cardClass}>
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b mb-6 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+            <div>
+              <h2 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                <Cpu className="w-5 h-5 text-purple-600" />
+                Performance Benchmark
+              </h2>
+              <p className={`text-sm mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Run a simulated stress test to estimate daemon CPU and Memory overhead.
+              </p>
+            </div>
+            
+            <button
+              onClick={runBenchmark}
+              disabled={isBenchmarking}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              {isBenchmarking ? (
+                <RotateCw className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <Play className="w-4 h-4 fill-white" />
+              )}
+              {isBenchmarking ? 'Running...' : 'Run Benchmark'}
+            </button>
+          </div>
+
+          {isBenchmarking && (
+            <div className="mb-6">
+              <div className="flex justify-between text-xs mb-2">
+                <span className={darkMode ? 'text-slate-300' : 'text-slate-600'}>Simulating daemon cycles...</span>
+                <span className={darkMode ? 'text-slate-300' : 'text-slate-600'}>{benchmarkProgress}%</span>
+              </div>
+              <div className={`w-full h-2 rounded-full overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                <div 
+                  className="h-full bg-purple-500 transition-all duration-300 ease-out" 
+                  style={{ width: `${benchmarkProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {benchmarkResult && !isBenchmarking && (
+            <div className={`p-5 rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+              <h3 className={`text-sm font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Benchmark Results</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className={`p-4 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                  <span className={`text-xs block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Est. CPU Overhead</span>
+                  <span className={`text-xl font-bold font-mono ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{benchmarkResult.cpuEst}</span>
+                </div>
+                <div className={`p-4 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                  <span className={`text-xs block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Est. Memory Overhead</span>
+                  <span className={`text-xl font-bold font-mono ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{benchmarkResult.memEst}</span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-lg text-sm flex gap-2 ${darkMode ? 'bg-purple-950/30 border border-purple-900/50 text-purple-200' : 'bg-purple-50 border border-purple-100 text-purple-800'}`}>
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-purple-500 mt-0.5" />
+                <p>{benchmarkResult.recommendation}</p>
+              </div>
+            </div>
+          )}
+          
+          {!benchmarkResult && !isBenchmarking && (
+            <div className={`py-12 text-center border-2 border-dashed rounded-xl ${darkMode ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-400'}`}>
+              <Activity className="w-8 h-8 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Click "Run Benchmark" to estimate system impact.</p>
+            </div>
+          )}
         </div>
-        <div className="bg-slate-950 text-emerald-400 p-4 rounded-xl font-mono text-xs h-64 overflow-y-auto space-y-1.5 border border-slate-800">
-          {logs.map((log, idx) => (
-            <div key={idx} className="break-all">{log}</div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -93,6 +93,35 @@ if ($LASTEXITCODE -eq 0) {
     URL.revokeObjectURL(url);
   };
 
+  const getRegScript = () => {
+    const startValue = config.startMode === 'Automatic' || config.startMode === 'Delayed' ? '00000002' : '00000003';
+    const escapedPath = config.workingDirectory.replace(/\\/g, '\\\\') + '\\\\winsw.exe';
+    
+    return `Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\${config.serviceName}]
+"DisplayName"="${config.displayName}"
+"Description"="${config.description}"
+"ObjectName"="LocalSystem"
+"Start"=dword:${startValue}
+"Type"=dword:00000010
+"ErrorControl"=dword:00000001
+"ImagePath"="${escapedPath}"
+`;
+  };
+
+  const handleDownloadReg = () => {
+    const blob = new Blob([getRegScript()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Backup-${config.serviceName}.reg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className={`rounded-2xl border shadow-sm p-6 sm:p-8 transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'}`}>
       <div className={`flex items-center justify-between pb-6 border-b mb-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -106,6 +135,17 @@ if ($LASTEXITCODE -eq 0) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+           <button
+            onClick={handleDownloadReg}
+            className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+              darkMode 
+                ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <Download className="w-4 h-4 text-slate-400" />
+            Backup .reg
+          </button>
            <button
             onClick={handleCopy}
             className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
