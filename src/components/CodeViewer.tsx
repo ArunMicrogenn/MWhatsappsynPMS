@@ -27,6 +27,7 @@ export function CodeViewer({ files, serviceName, darkMode }: CodeViewerProps) {
   const fileLabels: Record<keyof GeneratedFiles, { name: string; icon: string }> = {
     "winsw.xml": { name: "WinSW XML Config", icon: "📄" },
     "install-service.bat": { name: "NSSM Installer (.bat)", icon: "⚡" },
+    "uninstall-service.bat": { name: "NSSM Uninstaller (.bat)", icon: "🗑️" },
     "whatsapp-daemon.php": { name: "WhatsApp ODBC Daemon", icon: "🐘" },
     "manage-service.ps1": { name: "PowerShell Manager", icon: "🛡️" },
     "README.md": { name: "Installation Guide", icon: "📖" }

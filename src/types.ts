@@ -17,6 +17,7 @@ export interface ServiceConfig {
 export interface GeneratedFiles {
   "winsw.xml": string;
   "install-service.bat": string;
+  "uninstall-service.bat": string;
   "whatsapp-daemon.php": string;
   "manage-service.ps1": string;
   "README.md": string;

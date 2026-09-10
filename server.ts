@@ -98,6 +98,32 @@ net start "${serviceName}"
 pause
 `;
 
+    // 2b. NSSM Batch Uninstaller
+    const nssmUninstallBatch = `@echo off
+TITLE Uninstall ${displayName}
+color 0c
+echo ========================================================
+echo Uninstalling ${displayName}...
+echo ========================================================
+
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo [ERROR] Please run this script as Administrator!
+    pause
+    exit /b 1
+)
+
+echo Stopping the service...
+nssm stop "${serviceName}"
+
+echo Removing the service...
+nssm remove "${serviceName}" confirm
+
+echo ========================================================
+echo Service "${serviceName}" removed successfully.
+pause
+`;
+
     // 3. Converted PHP Daemon Script (Adapted from user's script for continuous Windows Service CLI execution)
     const phpDaemonCode = `<?php
 /**
@@ -513,12 +539,14 @@ This package wraps your WhatsApp synchronization PHP script into a continuous ba
 
 ## Option B: Using NSSM (Non-Sucking Service Manager)
 1. Download NSSM from \`https://nssm.cc/\` and place \`nssm.exe\` in your PATH.
-2. Save and run the generated \`install-service.bat\` script as **Administrator**.
+2. Save and run the generated \`install-service.bat\` script as **Administrator** to install and start the service.
+3. To remove the service later, run \`uninstall-service.bat\` as **Administrator**.
 
 ## Managing the Service via PowerShell
 - **Check Status**: \`./manage-service.ps1 -Action status\`
 - **View Live Logs**: \`./manage-service.ps1 -Action logs\`
 - **Restart Service**: \`./manage-service.ps1 -Action restart\`
+- **Uninstall Service**: \`./manage-service.ps1 -Action uninstall\`
 `;
 
     res.json({
@@ -526,6 +554,7 @@ This package wraps your WhatsApp synchronization PHP script into a continuous ba
       files: {
         "winsw.xml": winswXml,
         "install-service.bat": nssmBatch,
+        "uninstall-service.bat": nssmUninstallBatch,
         "whatsapp-daemon.php": phpDaemonCode,
         "manage-service.ps1": psScript,
         "README.md": readmeGuide
