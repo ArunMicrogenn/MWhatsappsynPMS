@@ -23,8 +23,16 @@ app.post("/api/generate-wrapper", (req, res) => {
       logMode = "roll-by-size",
       startMode = "Automatic",
       onFailure = "restart",
-      delaySeconds = "10"
+      delaySeconds = "10",
+      dependencies = ""
     } = req.body;
+
+    const dependTags = dependencies
+      .split(',')
+      .map((d: string) => d.trim())
+      .filter((d: string) => d.length > 0)
+      .map((d: string) => `  <depend>${d}</depend>`)
+      .join('\n');
 
     // 1. WinSW XML Configuration
     const winswXml = `<service>
@@ -39,11 +47,17 @@ app.post("/api/generate-wrapper", (req, res) => {
   </log>
   <workingdirectory>${workingDirectory}</workingdirectory>
   <startmode>${startMode}</startmode>
-  <onfailure action="${onFailure}" delay="${delaySeconds}sec"/>
+${dependTags ? dependTags + '\n' : ''}  <onfailure action="${onFailure}" delay="${delaySeconds}sec"/>
   <resetfailure>1 hour</resetfailure>
   <env name="APP_ENV" value="production" />
   <env name="PHP_CLI_SERVER_WORKERS" value="4" />
 </service>`;
+
+    const nssmDepends = dependencies
+      .split(',')
+      .map((d: string) => d.trim())
+      .filter((d: string) => d.length > 0)
+      .join(' ');
 
     // 2. NSSM Batch Installer
     const nssmBatch = `@echo off
@@ -70,6 +84,7 @@ nssm install "${serviceName}" "${phpPath}" "${scriptPath}"
 nssm set "${serviceName}" AppDirectory "${workingDirectory}"
 nssm set "${serviceName}" DisplayName "${displayName}"
 nssm set "${serviceName}" Description "${description}"
+${nssmDepends ? `nssm set "${serviceName}" DependOnService ${nssmDepends}` : ''}
 nssm set "${serviceName}" Start SERVICE_AUTO_START
 nssm set "${serviceName}" AppStdout "${workingDirectory}\\logs\\service-stdout.log"
 nssm set "${serviceName}" AppStderr "${workingDirectory}\\logs\\service-stderr.log"

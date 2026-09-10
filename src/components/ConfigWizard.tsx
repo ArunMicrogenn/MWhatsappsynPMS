@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ServiceConfig } from '../types';
 import { Settings, Server, FileCode, Play, Shield, Terminal, AlertCircle } from 'lucide-react';
+import { ServiceArchitectureDiagram } from './ServiceArchitectureDiagram';
 
 interface ConfigWizardProps {
   config: ServiceConfig;
@@ -43,6 +44,10 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
       newErrors.pdfDestPath = "Must be a valid Windows directory path (e.g. C:\\...)";
     }
 
+    if (config.dependencies && !/^[a-zA-Z0-9_, -]+$/.test(config.dependencies)) {
+      newErrors.dependencies = "Use comma-separated service names without special characters.";
+    }
+
     return newErrors;
   }, [config]);
 
@@ -76,6 +81,38 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
     );
   };
 
+  const applyPreset = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const presetName = e.target.value;
+    if (presetName === 'development') {
+      onChange({
+        ...config,
+        logMode: 'roll-by-time',
+        startMode: 'Manual',
+        onFailure: 'ignore',
+        delaySeconds: '5',
+        dependencies: ''
+      });
+    } else if (presetName === 'staging') {
+      onChange({
+        ...config,
+        logMode: 'roll-by-size-time',
+        startMode: 'Automatic',
+        onFailure: 'restart',
+        delaySeconds: '10',
+        dependencies: 'MSSQLSERVER'
+      });
+    } else if (presetName === 'production') {
+      onChange({
+        ...config,
+        logMode: 'roll-by-size',
+        startMode: 'Automatic',
+        onFailure: 'restart',
+        delaySeconds: '5',
+        dependencies: 'MSSQLSERVER'
+      });
+    }
+  };
+
   return (
     <div className={`rounded-2xl border shadow-sm p-6 sm:p-8 transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/80 text-slate-800'}`}>
       <div className={`flex items-center justify-between pb-6 border-b mb-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -100,6 +137,32 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
           )}
           Generate Service Package
         </button>
+      </div>
+
+      <div className={`mb-8 p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+            <Settings className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+          </div>
+          <div>
+            <h3 className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>Environment Preset</h3>
+            <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Instantly apply recommended settings</p>
+          </div>
+        </div>
+        <select 
+          onChange={applyPreset}
+          defaultValue=""
+          className={`px-3.5 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all ${
+            darkMode 
+              ? 'bg-slate-900 border-slate-600 text-white focus:bg-slate-900' 
+              : 'bg-white border-slate-200 text-slate-800 focus:bg-white'
+          }`}
+        >
+          <option value="" disabled>Select a preset...</option>
+          <option value="development">Development (Manual Start, Low Impact)</option>
+          <option value="staging">Staging (Auto Start, Standard Recovery)</option>
+          <option value="production">Production / High Load (Auto Start, Aggressive Recovery)</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,7 +286,7 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
         </div>
 
         {/* Behavior & Recovery */}
-        <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+        <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div>
             <label className={labelClass}>Startup Type</label>
             <select
@@ -260,8 +323,22 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
               placeholder="10"
             />
           </div>
+
+          <div>
+            <label className={labelClass}>Dependencies (Comma-separated)</label>
+            <input
+              type="text"
+              value={config.dependencies}
+              onChange={(e) => handleChange('dependencies', e.target.value)}
+              className={getInputClass('dependencies')}
+              placeholder="MSSQLSERVER, MySQL"
+            />
+            {renderError('dependencies')}
+          </div>
         </div>
       </div>
+      
+      <ServiceArchitectureDiagram config={config} darkMode={darkMode} />
     </div>
   );
 }

@@ -11,6 +11,7 @@ export interface ServiceConfig {
   startMode: string;
   onFailure: string;
   delaySeconds: string;
+  dependencies: string;
 }
 
 export interface GeneratedFiles {

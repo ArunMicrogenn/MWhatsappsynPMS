@@ -4,10 +4,13 @@ import { ConfigWizard } from './components/ConfigWizard';
 import { CodeViewer } from './components/CodeViewer';
 import { ServiceSimulator } from './components/ServiceSimulator';
 import { AiCopilot } from './components/AiCopilot';
-import { MessageSquare, Settings, Activity, Bot, Terminal, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { DeploymentWizard } from './components/DeploymentWizard';
+import { LogMonitor } from './components/LogMonitor';
+import { QuickActions } from './components/QuickActions';
+import { MessageSquare, Settings, Activity, Bot, Terminal, ShieldCheck, Sun, Moon, ScrollText } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'config' | 'simulator' | 'copilot'>('config');
+  const [activeTab, setActiveTab] = useState<'config' | 'simulator' | 'copilot' | 'deployment' | 'logs'>('config');
   const [darkMode, setDarkMode] = useState(false);
   const [config, setConfig] = useState<ServiceConfig>({
     serviceName: 'WhatsAppSyncService',
@@ -21,7 +24,8 @@ export default function App() {
     logMode: 'roll-by-size',
     startMode: 'Automatic',
     onFailure: 'restart',
-    delaySeconds: '10'
+    delaySeconds: '10',
+    dependencies: 'MSSQLSERVER'
   });
 
   const [files, setFiles] = useState<GeneratedFiles | null>(null);
@@ -91,6 +95,28 @@ export default function App() {
                 Service Simulator
               </button>
               <button
+                onClick={() => setActiveTab('deployment')}
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'deployment'
+                    ? darkMode ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm'
+                    : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5 text-emerald-600" />
+                Deployment
+              </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'logs'
+                    ? darkMode ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm'
+                    : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ScrollText className="w-3.5 h-3.5 text-emerald-600" />
+                Log Monitor
+              </button>
+              <button
                 onClick={() => setActiveTab('copilot')}
                 className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'copilot'
@@ -140,8 +166,16 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'deployment' && (
+          <DeploymentWizard config={config} darkMode={darkMode} />
+        )}
+
         {activeTab === 'simulator' && (
           <ServiceSimulator serviceName={config.serviceName} darkMode={darkMode} />
+        )}
+
+        {activeTab === 'logs' && (
+          <LogMonitor serviceName={config.serviceName} darkMode={darkMode} />
         )}
 
         {activeTab === 'copilot' && (
@@ -153,6 +187,7 @@ export default function App() {
       <footer className={`border-t py-4 text-center text-xs transition-colors duration-200 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
         WhatsApp PHP Windows Service Suite &bull; Built for robust background daemon execution
       </footer>
+      <QuickActions serviceName={config.serviceName} darkMode={darkMode} />
     </div>
   );
 }
