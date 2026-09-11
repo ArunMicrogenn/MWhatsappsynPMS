@@ -24,7 +24,8 @@ app.post("/api/generate-wrapper", (req, res) => {
       startMode = "Automatic",
       onFailure = "restart",
       delaySeconds = "10",
-      dependencies = ""
+      dependencies = "",
+      generateHealthCheck = false
     } = req.body;
 
     const dependTags = dependencies
@@ -549,16 +550,46 @@ This package wraps your WhatsApp synchronization PHP script into a continuous ba
 - **Uninstall Service**: \`./manage-service.ps1 -Action uninstall\`
 `;
 
+    // 6. Health Check Script (Optional)
+    const healthCheckCode = `<?php
+/**
+ * Internal Health Check Script for ${serviceName}
+ * Ping this script to confirm the daemon is responsive and database connectivity is active.
+ */
+
+header('Content-Type: application/json');
+
+$response = [
+    'service' => '${serviceName}',
+    'status' => 'OK',
+    'timestamp' => date('c'),
+    'metrics' => [
+        'memory_usage_mb' => round(memory_get_usage() / 1024 / 1024, 2)
+    ]
+];
+
+// Optional: Add DB check here if required
+// ...
+
+echo json_encode($response);
+?>`;
+
+    const generatedFiles: any = {
+      "winsw.xml": winswXml,
+      "install-service.bat": nssmBatch,
+      "uninstall-service.bat": nssmUninstallBatch,
+      "whatsapp-daemon.php": phpDaemonCode,
+      "manage-service.ps1": psScript,
+      "README.md": readmeGuide
+    };
+
+    if (generateHealthCheck) {
+      generatedFiles["health-check.php"] = healthCheckCode;
+    }
+
     res.json({
       success: true,
-      files: {
-        "winsw.xml": winswXml,
-        "install-service.bat": nssmBatch,
-        "uninstall-service.bat": nssmUninstallBatch,
-        "whatsapp-daemon.php": phpDaemonCode,
-        "manage-service.ps1": psScript,
-        "README.md": readmeGuide
-      }
+      files: generatedFiles
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

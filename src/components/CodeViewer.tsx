@@ -30,7 +30,8 @@ export function CodeViewer({ files, serviceName, darkMode }: CodeViewerProps) {
     "uninstall-service.bat": { name: "NSSM Uninstaller (.bat)", icon: "🗑️" },
     "whatsapp-daemon.php": { name: "WhatsApp ODBC Daemon", icon: "🐘" },
     "manage-service.ps1": { name: "PowerShell Manager", icon: "🛡️" },
-    "README.md": { name: "Installation Guide", icon: "📖" }
+    "README.md": { name: "Installation Guide", icon: "📖" },
+    "health-check.php": { name: "Health Check Script", icon: "🩺" }
   };
 
   const handleCopy = () => {

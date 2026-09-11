@@ -12,6 +12,7 @@ export interface ServiceConfig {
   onFailure: string;
   delaySeconds: string;
   dependencies: string;
+  generateHealthCheck?: boolean;
 }
 
 export interface GeneratedFiles {
@@ -21,4 +22,5 @@ export interface GeneratedFiles {
   "whatsapp-daemon.php": string;
   "manage-service.ps1": string;
   "README.md": string;
+  "health-check.php"?: string;
 }

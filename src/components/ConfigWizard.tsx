@@ -589,6 +589,19 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
             />
             {renderError('dependencies')}
           </div>
+          
+          <div className="md:col-span-2 lg:col-span-4 flex items-center gap-3 mt-2 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+            <input 
+              type="checkbox"
+              id="generateHealthCheck"
+              checked={config.generateHealthCheck || false}
+              onChange={(e) => handleChange('generateHealthCheck', e.target.checked)}
+              className="w-4 h-4 text-emerald-600 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-900"
+            />
+            <label htmlFor="generateHealthCheck" className={`text-sm font-medium cursor-pointer ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Generate internal health-check PHP script
+            </label>
+          </div>
         </div>
       </div>
       

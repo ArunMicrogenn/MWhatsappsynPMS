@@ -34,7 +34,7 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
     errorRate: "0.0%"
   });
   const [pollCount, setPollCount] = useState(0);
-  const [memoryHistory, setMemoryHistory] = useState<{ time: string, memory: number }[]>([]);
+  const [resourceHistory, setResourceHistory] = useState<{ time: string, memory: number, cpu: number }[]>([]);
 
   const [logs, setLogs] = useState<string[]>([
     `[${new Date().toLocaleTimeString()}] Service "${serviceName}" initialized successfully.`,
@@ -52,8 +52,12 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
         if (data.success) {
           setMetrics(data.metrics);
           setPollCount(c => c + 1);
-          setMemoryHistory(prev => {
-            const next = [...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), memory: data.metrics.memoryUsageMB }];
+          setResourceHistory(prev => {
+            const next = [...prev, { 
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
+              memory: data.metrics.memoryUsageMB,
+              cpu: data.metrics.cpuLoadPercent
+            }];
             return next.slice(-20); // Keep last 20 points
           });
         }
@@ -290,24 +294,39 @@ export function ServiceSimulator({ serviceName, darkMode }: ServiceSimulatorProp
           </div>
           
           <div className="mt-6 pt-4 border-t border-slate-800">
-            <h4 className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">Memory Usage Trend</h4>
-            <div className="h-40 w-full">
+            <h4 className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">Resource Usage Trend (CPU & Memory)</h4>
+            <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={memoryHistory} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                <LineChart data={resourceHistory} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                   <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickMargin={8} minTickGap={15} />
-                  <YAxis stroke="#64748b" fontSize={10} domain={['dataMin - 5', 'dataMax + 5']} />
+                  <YAxis yAxisId="left" stroke="#64748b" fontSize={10} domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `${value}MB`} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} domain={[0, 'dataMax + 10']} tickFormatter={(value) => `${value}%`} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '12px' }}
                     itemStyle={{ color: '#60a5fa' }}
+                    labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
                   />
                   <Line 
+                    yAxisId="left"
                     type="monotone" 
+                    name="Memory (MB)"
                     dataKey="memory" 
                     stroke="#3b82f6" 
                     strokeWidth={2}
                     dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
                     activeDot={{ r: 5, fill: '#60a5fa' }}
+                    isAnimationActive={false}
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    name="CPU (%)"
+                    dataKey="cpu" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: '#34d399' }}
                     isAnimationActive={false}
                   />
                 </LineChart>
