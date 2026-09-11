@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { GeneratedFiles } from '../types';
 import { FileText, Copy, Check, Download, Terminal, Code } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface CodeViewerProps {
   files: GeneratedFiles | null;
@@ -40,18 +42,21 @@ export function CodeViewer({ files, serviceName, darkMode }: CodeViewerProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadAll = () => {
-    Object.entries(files).forEach(([filename, content]) => {
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename === 'winsw.xml' ? `${serviceName}.xml` : filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
+  const handleDownloadAll = async () => {
+    try {
+      const zip = new JSZip();
+      
+      Object.entries(files).forEach(([filename, content]) => {
+        const name = filename === 'winsw.xml' ? `${serviceName}.xml` : filename;
+        zip.file(name, content as string);
+      });
+      
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, `${serviceName}-package.zip`);
+    } catch (err) {
+      console.error("Failed to generate zip file", err);
+      alert("Failed to generate zip file. Please try again.");
+    }
   };
 
   return (

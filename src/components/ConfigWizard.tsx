@@ -19,7 +19,32 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
   const [probeResult, setProbeResult] = useState<{ installed: string[], missing: string[] } | null>(null);
   const [isDryRunning, setIsDryRunning] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isCheckingPhp, setIsCheckingPhp] = useState(false);
+  const [phpCheckResult, setPhpCheckResult] = useState<{ status: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const checkPhpVersion = async () => {
+    if (!config.phpPath) return;
+    setIsCheckingPhp(true);
+    setPhpCheckResult(null);
+    try {
+      const res = await fetch('/api/check-php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phpPath: config.phpPath })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPhpCheckResult({ status: 'success', message: data.version });
+      } else {
+        setPhpCheckResult({ status: 'error', message: data.error });
+      }
+    } catch (err: any) {
+      setPhpCheckResult({ status: 'error', message: err.message });
+    } finally {
+      setIsCheckingPhp(false);
+    }
+  };
 
   const runDryRun = () => {
     if (!config.scriptPath) return;
@@ -442,13 +467,32 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
                 Scan System
               </button>
             </div>
-            <input
-              type="text"
-              value={config.phpPath}
-              onChange={(e) => handleChange('phpPath', e.target.value)}
-              className={getInputClass('phpPath', true)}
-              placeholder="C:\php\php.exe"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={config.phpPath}
+                onChange={(e) => {
+                  handleChange('phpPath', e.target.value);
+                  setPhpCheckResult(null);
+                }}
+                className={getInputClass('phpPath', true) + " flex-1"}
+                placeholder="C:\\php\\php.exe"
+              />
+              <button
+                onClick={checkPhpVersion}
+                disabled={isCheckingPhp || !config.phpPath}
+                className={`px-3 py-2 rounded-xl border flex items-center justify-center transition-colors ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}
+                title="Verify PHP Path"
+              >
+                {isCheckingPhp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Terminal className="w-4 h-4" />}
+              </button>
+            </div>
+            {phpCheckResult && (
+               <div className={`mt-2 text-xs flex items-start gap-1.5 ${phpCheckResult.status === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {phpCheckResult.status === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+                  <span className="font-mono">{phpCheckResult.message}</span>
+               </div>
+            )}
             {renderError('phpPath')}
           </div>
 
@@ -594,8 +638,8 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
             <input 
               type="checkbox"
               id="generateHealthCheck"
-              checked={config.generateHealthCheck || false}
-              onChange={(e) => handleChange('generateHealthCheck', e.target.checked)}
+              checked={Boolean(config.generateHealthCheck)}
+              onChange={(e) => onChange({ ...config, generateHealthCheck: e.target.checked })}
               className="w-4 h-4 text-emerald-600 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-900"
             />
             <label htmlFor="generateHealthCheck" className={`text-sm font-medium cursor-pointer ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>

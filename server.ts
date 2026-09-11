@@ -2,11 +2,31 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// API: Check PHP version
+app.post("/api/check-php", async (req, res) => {
+  try {
+    const { phpPath } = req.body;
+    if (!phpPath) {
+      return res.status(400).json({ success: false, error: "PHP path is required" });
+    }
+    
+    const { stdout } = await execAsync(`"${phpPath}" -v`);
+    const versionLine = stdout.split('\\n')[0];
+    res.json({ success: true, version: versionLine });
+  } catch (err: any) {
+    res.json({ success: false, error: err.message || "Failed to execute PHP at the specified path." });
+  }
+});
 
 // API: Generate wrapper configurations & converted PHP daemon
 app.post("/api/generate-wrapper", (req, res) => {
@@ -41,7 +61,7 @@ app.post("/api/generate-wrapper", (req, res) => {
   <name>${displayName}</name>
   <description>${description}</description>
   <executable>${phpPath}</executable>
-  <arguments>${scriptPath}</arguments>
+  <arguments>"${scriptPath}"</arguments>
   <log mode="${logMode}">
     <sizeThreshold>10240</sizeThreshold>
     <keepFiles>10</keepFiles>
@@ -81,7 +101,8 @@ if %errorLevel% neq 0 (
     echo [WARNING] nssm not found in PATH. Please ensure nssm.exe is in the folder or PATH.
 )
 
-nssm install "${serviceName}" "${phpPath}" "${scriptPath}"
+nssm install "${serviceName}" "${phpPath}"
+nssm set "${serviceName}" AppParameters """${scriptPath}"""
 nssm set "${serviceName}" AppDirectory "${workingDirectory}"
 nssm set "${serviceName}" DisplayName "${displayName}"
 nssm set "${serviceName}" Description "${description}"
@@ -273,7 +294,7 @@ while (true) {
                         if ($res1) {
                             while ($row1 = odbc_fetch_array($res1)) {
                                 $val = ($row1['Smsval'] == '') ? ' - ' : ((substr($row1['Smsval'], 0, 10) == '01/01/1900') ? substr($row1['Smsval'], 11, 5) : $row1['Smsval']);
-                                array_push($array, "\"$val\"");
+                                array_push($array, '"' . $val . '"');
                             }
                         }
 
@@ -295,10 +316,10 @@ while (true) {
 
                         if ($clbal > 0) {
                             $payload = '{
-                                "apiKey": ' . "\"$whatsapp_access_token\"" . ',
-                                "campaignName": ' . "\"$templatename\"" . ',
-                                "destination": ' . "\"$mobnew\"" . ',
-                                "userName": ' . "\"$smsUsername \"" . ',
+                                "apiKey": "' . $whatsapp_access_token . '",
+                                "campaignName": "' . $templatename . '",
+                                "destination": "' . $mobnew . '",
+                                "userName": "' . $smsUsername . '",
                                 "source": "VBE",
                                 "templateParams": [' . implode(",", $array) . ']' . $mediaBlock . ',
                                 "tags": [],
@@ -365,16 +386,16 @@ while (true) {
                         if ($res1) {
                             while ($row1 = odbc_fetch_array($res1)) {
                                 $val = ($row1['Smsval'] == '') ? ' - ' : ((substr($row1['Smsval'], 0, 10) == '01/01/1900') ? substr($row1['Smsval'], 11, 5) : $row1['Smsval']);
-                                array_push($array, "\"$val\"");
+                                array_push($array, '"' . $val . '"');
                             }
                         }
 
                         if ($clbal > 0) {
                             $payload = '{
-                                "apiKey": ' . "\"$whatsapp_access_token\"" . ',
-                                "campaignName": ' . "\"$templatename\"" . ',
-                                "destination": ' . "\"$mobnew\"" . ',
-                                "userName": ' . "\"$smsUsername \"" . ',
+                                "apiKey": "' . $whatsapp_access_token . '",
+                                "campaignName": "' . $templatename . '",
+                                "destination": "' . $mobnew . '",
+                                "userName": "' . $smsUsername . '",
                                 "source": "PMS",
                                 "templateParams": [' . implode(",", $array) . '],
                                 "tags": [],
@@ -434,14 +455,14 @@ while (true) {
                         if ($res1) {
                             while ($row1 = odbc_fetch_array($res1)) {
                                 $val = ($row1['Smsval'] == '') ? ' - ' : ((substr($row1['Smsval'], 0, 10) == '01/01/1900') ? substr($row1['Smsval'], 11, 5) : $row1['Smsval']);
-                                array_push($array, "\"$val\"");
+                                array_push($array, '"' . $val . '"');
                             }
                         }
 
                         if ($clbal > 0) {
                             $payload = '{
-                                "template": ' . "\"$templatename\"" . ',
-                                "mobile": ' . "\"$mobnew\"" . ',
+                                "template": "' . $templatename . '",
+                                "mobile": "' . $mobnew . '",
                                 "parameters": [' . implode(",", $array) . ']
                             }';
 
