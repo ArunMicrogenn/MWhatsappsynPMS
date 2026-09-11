@@ -98,20 +98,29 @@ if %errorLevel% neq 0 (
 REM Check if nssm is available
 where nssm >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [WARNING] nssm not found in PATH. Please ensure nssm.exe is in the folder or PATH.
+    if exist "%~dp0nssm.exe" (
+        set "NSSM_BIN=%~dp0nssm.exe"
+    ) else (
+        echo [ERROR] nssm.exe not found in PATH or in the current directory.
+        echo Please download NSSM from http://nssm.cc/ and place nssm.exe here.
+        pause
+        exit /b 1
+    )
+) else (
+    set "NSSM_BIN=nssm"
 )
 
-nssm install "${serviceName}" "${phpPath}"
-nssm set "${serviceName}" AppParameters """${scriptPath}"""
-nssm set "${serviceName}" AppDirectory "${workingDirectory}"
-nssm set "${serviceName}" DisplayName "${displayName}"
-nssm set "${serviceName}" Description "${description}"
-${nssmDepends ? `nssm set "${serviceName}" DependOnService ${nssmDepends}` : ''}
-nssm set "${serviceName}" Start SERVICE_AUTO_START
-nssm set "${serviceName}" AppStdout "${workingDirectory}\\logs\\service-stdout.log"
-nssm set "${serviceName}" AppStderr "${workingDirectory}\\logs\\service-stderr.log"
-nssm set "${serviceName}" AppRotateFiles 1
-nssm set "${serviceName}" AppRotateBytes 10485760
+"%NSSM_BIN%" install "${serviceName}" "${phpPath}"
+"%NSSM_BIN%" set "${serviceName}" AppParameters """${scriptPath}"""
+"%NSSM_BIN%" set "${serviceName}" AppDirectory "${workingDirectory}"
+"%NSSM_BIN%" set "${serviceName}" DisplayName "${displayName}"
+"%NSSM_BIN%" set "${serviceName}" Description "${description}"
+${nssmDepends ? `"%NSSM_BIN%" set "${serviceName}" DependOnService ${nssmDepends}` : ''}
+"%NSSM_BIN%" set "${serviceName}" Start SERVICE_AUTO_START
+"%NSSM_BIN%" set "${serviceName}" AppStdout "${workingDirectory}\\logs\\service-stdout.log"
+"%NSSM_BIN%" set "${serviceName}" AppStderr "${workingDirectory}\\logs\\service-stderr.log"
+"%NSSM_BIN%" set "${serviceName}" AppRotateFiles 1
+"%NSSM_BIN%" set "${serviceName}" AppRotateBytes 10485760
 
 echo ========================================================
 echo Service "${serviceName}" installed successfully!
@@ -135,11 +144,24 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
+where nssm >nul 2>&1
+if %errorLevel% neq 0 (
+    if exist "%~dp0nssm.exe" (
+        set "NSSM_BIN=%~dp0nssm.exe"
+    ) else (
+        echo [ERROR] nssm.exe not found.
+        pause
+        exit /b 1
+    )
+) else (
+    set "NSSM_BIN=nssm"
+)
+
 echo Stopping the service...
-nssm stop "${serviceName}"
+"%NSSM_BIN%" stop "${serviceName}"
 
 echo Removing the service...
-nssm remove "${serviceName}" confirm
+"%NSSM_BIN%" remove "${serviceName}" confirm
 
 echo ========================================================
 echo Service "${serviceName}" removed successfully.
@@ -560,9 +582,10 @@ This package wraps your WhatsApp synchronization PHP script into a continuous ba
    \`\`\`
 
 ## Option B: Using NSSM (Non-Sucking Service Manager)
-1. Download NSSM from \`https://nssm.cc/\` and place \`nssm.exe\` in your PATH.
-2. Save and run the generated \`install-service.bat\` script as **Administrator** to install and start the service.
-3. To remove the service later, run \`uninstall-service.bat\` as **Administrator**.
+1. Download NSSM from [http://nssm.cc/](http://nssm.cc/).
+2. Extract the archive and copy the \`nssm.exe\` file (from the \`win64\` folder) directly into the \`${workingDirectory}\` directory alongside your scripts.
+3. Save and run the generated \`install-service.bat\` script as **Administrator** to install and start the service.
+4. To remove the service later, run \`uninstall-service.bat\` as **Administrator**.
 
 ## Managing the Service via PowerShell
 - **Check Status**: \`./manage-service.ps1 -Action status\`
