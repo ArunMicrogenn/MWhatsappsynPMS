@@ -13,6 +13,7 @@ export interface ServiceConfig {
   delaySeconds: string;
   dependencies: string;
   generateHealthCheck?: boolean;
+  odbcDriver?: string;
 }
 
 export interface GeneratedFiles {

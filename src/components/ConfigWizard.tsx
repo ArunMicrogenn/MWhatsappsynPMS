@@ -583,6 +583,31 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
           </div>
         </div>
 
+        {/* Database Configuration */}
+        <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 gap-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+          <div className="md:col-span-1">
+             <h3 className={`text-sm font-semibold uppercase tracking-wider flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+               <Terminal className="w-4 h-4 text-slate-500" /> Database Configuration
+             </h3>
+             <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+               Set the ODBC driver string to match your SQL Server environment.
+             </p>
+          </div>
+          <div>
+            <label className={labelClass}>ODBC Driver String</label>
+            <input
+              type="text"
+              value={config.odbcDriver}
+              onChange={(e) => handleChange('odbcDriver', e.target.value)}
+              className={getInputClass('odbcDriver', true)}
+              placeholder="{SQL Server Native Client 11.0}"
+            />
+            <p className={`text-[11px] mt-1.5 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+              Common values: <code>{`{SQL Server Native Client 11.0}`}</code>, <code>{`{ODBC Driver 17 for SQL Server}`}</code>, or <code>{`{SQL Server}`}</code>
+            </p>
+          </div>
+        </div>
+
         {/* Behavior & Recovery */}
         <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div>

@@ -45,7 +45,8 @@ app.post("/api/generate-wrapper", (req, res) => {
       onFailure = "restart",
       delaySeconds = "10",
       dependencies = "",
-      generateHealthCheck = false
+      generateHealthCheck = false,
+      odbcDriver = "{SQL Server Native Client 11.0}"
     } = req.body;
 
     const dependTags = dependencies
@@ -206,8 +207,8 @@ $pollInterval = 30; // seconds between sync cycles
 
 while (true) {
     try {
-        writeLog("Connecting to SQL Server ODBC ({$myServer} / {$myDB})...");
-        $dbhandle = odbc_connect("Driver={SQL Server Native Client 11.0};Server=$myServer;Database=$myDB;", $myUser, $myPass);
+        writeLog("Connecting to SQL Server ODBC ({$myServer} / {$myDB}) using driver ${odbcDriver}...");
+        $dbhandle = odbc_connect("Driver=${odbcDriver};Server=$myServer;Database=$myDB;", $myUser, $myPass);
 
         if (!$dbhandle) {
             writeLog("ERROR: ODBC connection failed: " . odbc_errormsg());
@@ -251,7 +252,7 @@ while (true) {
             writeLog("Processing Hotel: {$Whatsapp_hotelcode} ({$smsCompany}) [Biz: {$whatsappbusiness}, Askeva: {$whatsappaskev}, MWhatsApp: {$mwhatsapp}]");
 
             // Connect to individual hotel DB
-            $dbhandlein = odbc_connect("Driver={SQL Server Native Client 11.0};Server=$myServerin;Database=$myDBin;", $myUserin, $myPassin);
+            $dbhandlein = odbc_connect("Driver=${odbcDriver};Server=$myServerin;Database=$myDBin;", $myUserin, $myPassin);
             if (!$dbhandlein) {
                 writeLog("WARNING: Could not connect to hotel DB {$myDBin} on {$myServerin}");
                 continue;

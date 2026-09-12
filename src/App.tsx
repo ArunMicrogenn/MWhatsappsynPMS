@@ -25,7 +25,8 @@ export default function App() {
     startMode: 'Automatic',
     onFailure: 'restart',
     delaySeconds: '10',
-    dependencies: 'MSSQLSERVER'
+    dependencies: 'MSSQLSERVER',
+    odbcDriver: '{SQL Server Native Client 11.0}'
   });
 
   const [files, setFiles] = useState<GeneratedFiles | null>(null);
