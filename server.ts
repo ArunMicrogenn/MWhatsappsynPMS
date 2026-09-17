@@ -152,20 +152,50 @@ if %errorLevel% neq 0 (
 
 REM Check if nssm is available
 where nssm >nul 2>&1
-if %errorLevel% neq 0 (
+if %errorLevel% equ 0 (
+    set "NSSM_BIN=nssm"
+) else if exist "%~dp0nssm.exe" (
+    set "NSSM_BIN=%~dp0nssm.exe"
+) else if exist "%~dp0win64\nssm.exe" (
+    set "NSSM_BIN=%~dp0win64\nssm.exe"
+) else (
+    echo [INFO] nssm.exe was not found in PATH or the current folder.
+    echo [INFO] Attempting to auto-download 64-bit nssm.exe via PowerShell...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $zip = Join-Path $env:TEMP 'nssm.zip'; try { Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile $zip -UseBasicParsing; Expand-Archive -Path $zip -DestinationPath (Join-Path $env:TEMP 'nssm_temp') -Force; Copy-Item (Join-Path $env:TEMP 'nssm_temp\nssm-2.24\win64\nssm.exe') -Destination '%~dp0nssm.exe' -Force; Remove-Item $zip -Force -ErrorAction SilentlyContinue; Remove-Item (Join-Path $env:TEMP 'nssm_temp') -Recurse -Force -ErrorAction SilentlyContinue; exit 0 } catch { exit 1 }"
     if exist "%~dp0nssm.exe" (
+        echo [SUCCESS] nssm.exe downloaded successfully.
         set "NSSM_BIN=%~dp0nssm.exe"
     ) else (
-        echo [ERROR] nssm.exe not found in PATH or in the current directory.
-        echo Please download NSSM from http://nssm.cc/ and place nssm.exe here.
+        echo.
+        echo [ERROR] nssm.exe is required to register this Windows service.
+        echo Automatic download failed or this machine does not have internet access.
+        echo.
+        echo -------------------------------------------------------------
+        echo QUICK MANUAL FIX (takes 1 minute):
+        echo 1. Download NSSM from: https://nssm.cc/download
+        echo 2. Open the downloaded zip, go to folder 'win64'
+        echo 3. Copy 'nssm.exe' into this exact folder:
+        echo    %~dp0
+        echo 4. Run this install-service.bat script again as Administrator.
+        echo -------------------------------------------------------------
+        echo.
         pause
         exit /b 1
     )
-) else (
-    set "NSSM_BIN=nssm"
 )
 
+echo Registering Windows Service "${serviceName}"...
 "%NSSM_BIN%" install "${serviceName}" "${phpPath}"
+if %errorLevel% neq 0 (
+    echo.
+    echo [ERROR] Failed to register Windows Service "${serviceName}".
+    echo Please verify that the service name does not already exist and PHP exists at:
+    echo "${phpPath}"
+    echo.
+    pause
+    exit /b %errorLevel%
+)
+
 "%NSSM_BIN%" set "${serviceName}" AppParameters """${scriptPath}"""
 "%NSSM_BIN%" set "${serviceName}" AppDirectory "${workingDirectory}"
 "%NSSM_BIN%" set "${serviceName}" DisplayName "${displayName}"
@@ -178,9 +208,15 @@ ${nssmDepends ? `"%NSSM_BIN%" set "${serviceName}" DependOnService ${nssmDepends
 "%NSSM_BIN%" set "${serviceName}" AppRotateBytes 10485760
 
 echo ========================================================
-echo Service "${serviceName}" installed successfully!
+echo Service "${serviceName}" configured successfully!
 echo Starting service now...
 net start "${serviceName}"
+if %errorLevel% neq 0 (
+    echo [WARNING] Service failed to start immediately. Check log at:
+    echo "${workingDirectory}\\logs\\service-stderr.log"
+) else (
+    echo [SUCCESS] Service "${serviceName}" is now RUNNING!
+)
 pause
 `;
 
@@ -200,16 +236,16 @@ if %errorLevel% neq 0 (
 )
 
 where nssm >nul 2>&1
-if %errorLevel% neq 0 (
-    if exist "%~dp0nssm.exe" (
-        set "NSSM_BIN=%~dp0nssm.exe"
-    ) else (
-        echo [ERROR] nssm.exe not found.
-        pause
-        exit /b 1
-    )
-) else (
+if %errorLevel% equ 0 (
     set "NSSM_BIN=nssm"
+) else if exist "%~dp0nssm.exe" (
+    set "NSSM_BIN=%~dp0nssm.exe"
+) else if exist "%~dp0win64\nssm.exe" (
+    set "NSSM_BIN=%~dp0win64\nssm.exe"
+) else (
+    echo [ERROR] nssm.exe not found in PATH or in the current directory.
+    pause
+    exit /b 1
 )
 
 echo Stopping the service...
