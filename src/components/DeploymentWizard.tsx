@@ -121,6 +121,26 @@ if ($LASTEXITCODE -eq 0) {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadS3Creds = () => {
+    const creds = {
+      AWS_ACCESS_KEY_ID: config.s3AccessKey,
+      AWS_SECRET_ACCESS_KEY: config.s3SecretKey,
+      AWS_DEFAULT_REGION: config.s3Region,
+      AWS_BUCKET: config.s3Bucket,
+      AWS_ENDPOINT_URL_S3: config.s3Endpoint || undefined,
+      PUBLIC_URL: config.s3PublicUrl || undefined
+    };
+    const blob = new Blob([JSON.stringify(creds, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `s3-credentials.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const checklistItems = [
     {
       id: 'paths',
@@ -164,6 +184,20 @@ if ($LASTEXITCODE -eq 0) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {config.enableCloudUpload && (
+              <button
+                onClick={handleDownloadS3Creds}
+                className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+                  darkMode 
+                    ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+                title="Download S3 credentials in JSON format"
+              >
+                <Download className="w-4 h-4 text-slate-400" />
+                S3 Creds
+              </button>
+            )}
             <button
               onClick={handleDownloadReg}
               className={`px-3.5 py-2 text-xs font-medium rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${

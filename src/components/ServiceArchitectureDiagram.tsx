@@ -110,21 +110,25 @@ export function ServiceArchitectureDiagram({ config, darkMode }: ServiceArchitec
           <path d="M 640 160 L 640 200" stroke={strokeColor} strokeWidth="2" markerEnd="url(#arrow)" fill="none" />
           <text x="650" y="185" fill={mutedTextColor} fontSize="10" fontFamily="sans-serif">Executes</text>
 
-          {/* I/O Operations Box */}
-          <rect x="80" y="210" width="280" height="70" rx="6" fill={boxBgPrimary} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
-          <text x="220" y="235" fill={textColor} fontSize="13" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle">
-            File Synchronization
-          </text>
-          <text x="220" y="255" fill={mutedTextColor} fontSize="10" fontFamily="sans-serif" textAnchor="middle">
-            Source: {config.pdfSourcePath.substring(0, 15)}...
-          </text>
-          <text x="220" y="270" fill={mutedTextColor} fontSize="10" fontFamily="sans-serif" textAnchor="middle">
-            Dest: {config.pdfDestPath.substring(0, 15)}...
-          </text>
+          {config.enableCloudUpload && (
+            <>
+              {/* I/O Operations Box */}
+              <rect x="80" y="210" width="280" height="70" rx="6" fill={boxBgPrimary} stroke={strokeColor} strokeWidth="1" strokeDasharray="4 2" />
+              <text x="220" y="235" fill={textColor} fontSize="13" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle">
+                Cloud Storage (S3) Upload
+              </text>
+              <text x="220" y="255" fill={mutedTextColor} fontSize="10" fontFamily="sans-serif" textAnchor="middle">
+                Bucket: {config.s3Bucket || 'Not Set'}
+              </text>
+              <text x="220" y="270" fill={mutedTextColor} fontSize="10" fontFamily="sans-serif" textAnchor="middle">
+                Path: {config.localPdfPath ? config.localPdfPath.substring(0, 30) : 'None'}
+              </text>
 
-          {/* Arrow Script -> I/O */}
-          <path d="M 430 245 L 370 245" stroke={boxBorderAccent} strokeWidth="2" markerEnd="url(#arrow-accent)" fill="none" />
-          <text x="400" y="235" fill={boxBorderAccent} fontSize="10" fontFamily="sans-serif" textAnchor="middle">Manages</text>
+              {/* Arrow Script -> I/O */}
+              <path d="M 430 245 L 370 245" stroke={boxBorderAccent} strokeWidth="2" markerEnd="url(#arrow-accent)" fill="none" />
+              <text x="400" y="235" fill={boxBorderAccent} fontSize="10" fontFamily="sans-serif" textAnchor="middle">Uploads</text>
+            </>
+          )}
 
         </svg>
       </div>

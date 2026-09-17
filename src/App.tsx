@@ -19,8 +19,20 @@ export default function App() {
     phpPath: 'C:\\php\\php.exe',
     scriptPath: 'C:\\whatsapp-sync\\daemon.php',
     workingDirectory: 'C:\\whatsapp-sync',
-    pdfSourcePath: 'C:\\ftproot\\Whatsapp',
-    pdfDestPath: 'C:\\whatsapp-sync\\Files',
+    enableCloudUpload: false,
+    localPdfPath: 'C:\\ftproot\\Whatsapp',
+    s3Endpoint: '',
+    s3Bucket: '',
+    s3Region: 'auto',
+    s3AccessKey: '',
+    s3SecretKey: '',
+    s3PublicUrl: '',
+    s3PresignedUrl: false,
+    s3PresignedExpiry: '604800',
+    s3MaxRetries: 3,
+    s3RetryBackoff: true,
+    s3InitialBackoffMs: 1000,
+    s3BackoffMultiplier: 2,
     logMode: 'roll-by-size',
     startMode: 'Automatic',
     onFailure: 'restart',
@@ -172,7 +184,7 @@ export default function App() {
         )}
 
         {activeTab === 'simulator' && (
-          <ServiceSimulator serviceName={config.serviceName} darkMode={darkMode} />
+          <ServiceSimulator serviceName={config.serviceName} config={config} darkMode={darkMode} />
         )}
 
         {activeTab === 'logs' && (

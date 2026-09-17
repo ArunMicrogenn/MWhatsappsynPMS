@@ -5,8 +5,23 @@ export interface ServiceConfig {
   phpPath: string;
   scriptPath: string;
   workingDirectory: string;
-  pdfSourcePath: string;
-  pdfDestPath: string;
+  enableCloudUpload: boolean;
+  localPdfPath: string;
+  syncRecursive?: boolean;
+  excludeExtensions?: string;
+  s3Endpoint: string;
+  s3Bucket: string;
+  s3Region: string;
+  s3AccessKey: string;
+  s3SecretKey: string;
+  s3PublicUrl: string;
+  s3PresignedUrl: boolean;
+  s3PresignedExpiry: string;
+  // S3 Automatic Retry Strategy
+  s3MaxRetries?: number;
+  s3RetryBackoff?: boolean;
+  s3InitialBackoffMs?: number;
+  s3BackoffMultiplier?: number;
   logMode: string;
   startMode: string;
   onFailure: string;

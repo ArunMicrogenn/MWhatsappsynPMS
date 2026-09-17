@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { ServiceConfig } from '../types';
-import { Settings, Server, FileCode, Play, Shield, Terminal, AlertCircle, Upload, Loader2, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { Settings, Server, FileCode, Play, Shield, Terminal, AlertCircle, Upload, Loader2, Search, CheckCircle2, XCircle, Cloud, HelpCircle } from 'lucide-react';
 import { ServiceArchitectureDiagram } from './ServiceArchitectureDiagram';
+import { S3ConnectionTester } from './S3ConnectionTester';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -21,7 +22,84 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
   const [dryRunResult, setDryRunResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isCheckingPhp, setIsCheckingPhp] = useState(false);
   const [phpCheckResult, setPhpCheckResult] = useState<{ status: 'success' | 'error'; message: string } | null>(null);
+  
+  const [showS3Help, setShowS3Help] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const envInputRef = useRef<HTMLInputElement>(null);
+
+  const handleEnvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split('\n');
+      let newS3AccessKey = config.s3AccessKey;
+      let newS3SecretKey = config.s3SecretKey;
+      let newS3Bucket = config.s3Bucket;
+      let newS3Region = config.s3Region;
+      let newS3Endpoint = config.s3Endpoint;
+      let newEnableCloudUpload = config.enableCloudUpload;
+
+      let inDefaultProfile = true; // Assume default profile or .env format
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        
+        // Skip comments and empty lines
+        if (!trimmedLine || trimmedLine.startsWith('#') || trimmedLine.startsWith(';')) return;
+
+        // Check for INI section headers (e.g., [default])
+        const sectionMatch = trimmedLine.match(/^\[(.*)\]$/);
+        if (sectionMatch) {
+          // If we see a section header, we are in an INI file.
+          // Let's only parse the [default] profile for AWS credentials.
+          inDefaultProfile = sectionMatch[1] === 'default';
+          return;
+        }
+
+        if (!inDefaultProfile) return; // Skip non-default profiles in INI
+
+        // Match both INI (key = value) and ENV (KEY="value") styles
+        const match = trimmedLine.match(/^([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+          const key = match[1].toUpperCase();
+          let value = match[2] || '';
+          // Remove surrounding quotes if present
+          value = value.replace(/^(['"])(.*)\1$/, '$2').trim();
+
+          if (['AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY', 'AWS_ACCESS_KEY', 'R2_ACCESS_KEY_ID'].includes(key)) newS3AccessKey = value;
+          if (['AWS_SECRET_ACCESS_KEY', 'S3_SECRET_KEY', 'AWS_SECRET_KEY', 'R2_SECRET_ACCESS_KEY'].includes(key)) newS3SecretKey = value;
+          if (['AWS_BUCKET', 'S3_BUCKET', 'AWS_S3_BUCKET', 'R2_BUCKET', 'BUCKET_NAME'].includes(key)) newS3Bucket = value;
+          if (['AWS_REGION', 'S3_REGION', 'AWS_DEFAULT_REGION', 'REGION'].includes(key)) newS3Region = value;
+          if (['AWS_ENDPOINT', 'S3_ENDPOINT', 'AWS_S3_ENDPOINT', 'ENDPOINT', 'AWS_ENDPOINT_URL_S3'].includes(key)) newS3Endpoint = value;
+        }
+      });
+
+      if (newS3AccessKey || newS3Bucket) {
+        newEnableCloudUpload = true;
+      }
+
+      onChange({
+        ...config,
+        s3AccessKey: newS3AccessKey,
+        s3SecretKey: newS3SecretKey,
+        s3Bucket: newS3Bucket,
+        s3Region: newS3Region,
+        s3Endpoint: newS3Endpoint,
+        enableCloudUpload: newEnableCloudUpload
+      });
+      
+      if (envInputRef.current) {
+          envInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const checkPhpVersion = async () => {
     if (!config.phpPath) return;
@@ -110,14 +188,6 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
     
     if (!config.workingDirectory || !/^[a-zA-Z]:\\/i.test(config.workingDirectory)) {
       newErrors.workingDirectory = "Must be a valid Windows directory path (e.g. C:\\...)";
-    }
-
-    if (!config.pdfSourcePath || !/^[a-zA-Z]:\\/i.test(config.pdfSourcePath)) {
-      newErrors.pdfSourcePath = "Must be a valid Windows directory path (e.g. C:\\...)";
-    }
-
-    if (!config.pdfDestPath || !/^[a-zA-Z]:\\/i.test(config.pdfDestPath)) {
-      newErrors.pdfDestPath = "Must be a valid Windows directory path (e.g. C:\\...)";
     }
 
     if (config.dependencies && !/^[a-zA-Z0-9_, -]+$/.test(config.dependencies)) {
@@ -267,6 +337,14 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <input 
+            id="env-upload-input"
+            type="file" 
+            accept=".env,text/plain,.aws/credentials"
+            className="hidden"
+            ref={envInputRef}
+            onChange={handleEnvFileUpload}
+          />
           <input 
             type="file" 
             accept=".json,.csv"
@@ -548,41 +626,6 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
           </div>
         </div>
 
-        {/* Media / PDF Paths */}
-        <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-          <div className="md:col-span-2">
-             <h3 className={`text-sm font-semibold uppercase tracking-wider flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-               <Terminal className="w-4 h-4 text-slate-500" /> Media & PDF Sync Paths
-             </h3>
-             <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-               Configure the source and destination directories for PDF file synchronization.
-             </p>
-          </div>
-          <div>
-            <label className={labelClass}>PDF Source Directory</label>
-            <input
-              type="text"
-              value={config.pdfSourcePath}
-              onChange={(e) => handleChange('pdfSourcePath', e.target.value)}
-              className={getInputClass('pdfSourcePath', true)}
-              placeholder="C:\ftproot\Whatsapp"
-            />
-            {renderError('pdfSourcePath')}
-          </div>
-
-          <div>
-            <label className={labelClass}>PDF Destination Directory</label>
-            <input
-              type="text"
-              value={config.pdfDestPath}
-              onChange={(e) => handleChange('pdfDestPath', e.target.value)}
-              className={getInputClass('pdfDestPath', true)}
-              placeholder="C:\whatsapp-sync\Files"
-            />
-            {renderError('pdfDestPath')}
-          </div>
-        </div>
-
         {/* Database Configuration */}
         <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 gap-6 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div className="md:col-span-1">
@@ -607,6 +650,14 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
             </p>
           </div>
         </div>
+
+        {/* Cloud Storage / S3 Configuration */}
+        <S3ConnectionTester 
+          config={config} 
+          onChange={onChange} 
+          darkMode={darkMode} 
+          setShowS3Help={setShowS3Help} 
+        />
 
         {/* Behavior & Recovery */}
         <div className={`space-y-4 pt-4 border-t md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -675,6 +726,66 @@ export function ConfigWizard({ config, onChange, onGenerate, loading, darkMode }
       </div>
       
       <ServiceArchitectureDiagram config={config} darkMode={darkMode} />
+
+      {/* S3 Help Modal Overlay */}
+      {showS3Help && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'}`}>
+            <button 
+              onClick={() => setShowS3Help(false)}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+            <h2 className={`text-xl font-bold mb-6 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              <Cloud className="w-5 h-5 text-indigo-500" />
+              How to generate S3 API Keys
+            </h2>
+            
+            <div className="space-y-6">
+              <section>
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>Option 1: Amazon Web Services (AWS S3) - The Industry Standard</h3>
+                <ol className={`list-decimal pl-5 space-y-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <li>Go to the <strong>AWS Management Console</strong> and search for <strong>S3</strong>.</li>
+                  <li>Click <strong>Create bucket</strong> and enter a unique <strong>Bucket name</strong>. Choose a <strong>Region</strong>.</li>
+                  <li>Search for <strong>IAM</strong> in the top search bar, go to <strong>Users</strong> and click <strong>Add users</strong>.</li>
+                  <li>Give the user a name (e.g., <code className={`px-1 rounded ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>whatsapp-sync-bot</code>).</li>
+                  <li>Attach the <code className={`px-1 rounded ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>AmazonS3FullAccess</code> policy (or a custom restrictive policy).</li>
+                  <li>Open the user's <strong>Security credentials</strong> tab and click <strong>Create access key</strong>.</li>
+                  <li>Copy your <strong>Access Key ID</strong> and <strong>Secret Access Key</strong>.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>Option 2: Cloudflare R2 - Best for avoiding bandwidth costs</h3>
+                <ol className={`list-decimal pl-5 space-y-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <li>Go to your <strong>Cloudflare Dashboard</strong> and click <strong>R2</strong>.</li>
+                  <li>Click <strong>Create bucket</strong>. This is your <strong>S3 Bucket Name</strong>.</li>
+                  <li>Note the <strong>S3 API URL</strong> shown on the bucket page. Enter this in the AISensy <strong>S3 Endpoint</strong> field.</li>
+                  <li>Go back to the main R2 page and click <strong>Manage R2 API Tokens</strong>.</li>
+                  <li>Click <strong>Create API token</strong>, set permissions to <strong>Object Read & Write</strong>, and click Create.</li>
+                  <li>Copy the provided <strong>Access Key ID</strong> and <strong>Secret Access Key</strong>.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Option 3: DigitalOcean Spaces - Simple & developer-friendly</h3>
+                <ol className={`list-decimal pl-5 space-y-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <li>Go to your <strong>DigitalOcean Control Panel</strong> and click <strong>Spaces</strong>.</li>
+                  <li>Click <strong>Create a Space</strong>. The name you give it is your <strong>S3 Bucket Name</strong>.</li>
+                  <li>The endpoint will look like <code className={`px-1 rounded ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>https://sfo3.digitaloceanspaces.com</code>. Enter this as the <strong>S3 Endpoint</strong>.</li>
+                  <li>Click <strong>API</strong> in the left sidebar, go to <strong>Spaces Keys</strong>.</li>
+                  <li>Click <strong>Generate New Key</strong>. You will be shown your <strong>Access Key</strong> and <strong>Secret Key</strong>.</li>
+                </ol>
+              </section>
+            </div>
+            
+            <div className={`mt-8 p-4 rounded-xl text-sm border ${darkMode ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-800'}`}>
+              <strong>Tip:</strong> Once you have your credentials, paste them into the wizard and use the <strong>Test Upload Permissions</strong> button to verify everything works!
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
